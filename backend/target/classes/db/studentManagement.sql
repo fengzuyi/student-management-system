@@ -132,4 +132,4 @@ INSERT INTO operation_log (user_id, operation_type, operation_content) VALUES
 (1, 'ADD_STUDENT', '添加学生：张三'),
 (1, 'ADD_STUDENT', '添加学生：李四'),
 (2, 'ADD_GRADE', '录入成绩：张三-计算机导论'),
-(2, 'ADD_GRADE', '录入成绩：李四-计算机导论'); 
+(2, 'ADD_GRADE', '录入成绩：李四-计算机导论');

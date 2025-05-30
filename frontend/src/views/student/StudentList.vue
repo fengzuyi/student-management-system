@@ -142,6 +142,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import request from '@/utils/request'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 interface Student {
   id: number
@@ -157,6 +158,17 @@ interface Student {
 interface ClassInfo {
   id: number
   className: string
+}
+
+interface ApiResponse<T> {
+  code: number
+  message?: string
+  data: T
+}
+
+interface ClassListResponse {
+  list: ClassInfo[]
+  total: number
 }
 
 interface ImportResponse {
@@ -220,19 +232,66 @@ const rules = reactive<FormRules>({
 // 获取班级列表
 const getClassList = async () => {
   try {
-    const res = await request.get('/api/class/list')
-    classOptions.value = res.data.map((item: any) => ({
-      ...item,
-      id: String(item.id)
-    }))
-  } catch (error) {
-    ElMessage.error('获取班级列表失败')
+    // 检查登录状态
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('未找到token，请先登录')
+      ElMessage.error('请先登录')
+      router.push('/login')
+      return
+    }
+
+    console.log('开始获取班级列表...')
+    console.log('当前token:', token)
+    
+    const res = await request.get('/api/class/list', {
+      params: {
+        pageNum: 1,
+        pageSize: 1000  // 获取足够多的班级数据
+      }
+    })
+    console.log('班级列表响应数据:', res)
+    
+    // 处理直接返回的列表数据
+    const classList = Array.isArray(res.data) ? res.data : 
+                     (res.data?.list || [])
+    console.log('获取到的班级列表:', classList)
+    
+    if (classList.length > 0) {
+      classOptions.value = classList.map((item: any) => ({
+        id: item.id,
+        className: item.className
+      }))
+      console.log('设置后的班级选项:', classOptions.value)
+    } else {
+      console.warn('班级列表为空')
+      ElMessage.warning('暂无班级数据')
+    }
+  } catch (error: any) {
+    console.error('获取班级列表失败，详细错误:', error)
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      ElMessage.error('登录已过期，请重新登录')
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      router.push('/login')
+    } else {
+      ElMessage.error(error.response?.data?.message || '获取班级列表失败')
+    }
   }
 }
 
 // 获取学生列表
 const getList = async () => {
   try {
+    // 检查登录状态
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('未找到token，请先登录')
+      ElMessage.error('请先登录')
+      router.push('/login')
+      return
+    }
+
     const params = {
       ...queryParams,
       classId: queryParams.classId || undefined
@@ -240,9 +299,16 @@ const getList = async () => {
     const res = await request.get('/api/student/list', { params })
     studentList.value = res.data.list
     total.value = res.data.total
-  } catch (error) {
+  } catch (error: any) {
     console.error('获取学生列表失败:', error)
-    ElMessage.error('获取学生列表失败')
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      ElMessage.error('登录已过期，请重新登录')
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      router.push('/login')
+    } else {
+      ElMessage.error(error.response?.data?.message || '获取学生列表失败')
+    }
   }
 }
 
@@ -476,6 +542,8 @@ const handleBatchDelete = () => {
     }
   })
 }
+
+const router = useRouter()
 
 onMounted(() => {
   getClassList()

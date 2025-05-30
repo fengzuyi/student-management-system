@@ -1,113 +1,99 @@
 package com.student.management.service;
 
 import com.student.management.dto.GradeDTO;
-import com.student.management.entity.Course;
-import com.student.management.entity.Grade;
-import com.student.management.entity.Student;
-import com.student.management.mapper.CourseMapper;
-import com.student.management.mapper.GradeMapper;
-import com.student.management.mapper.StudentMapper;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Service
-public class GradeService {
-    @Autowired
-    private GradeMapper gradeMapper;
+public interface GradeService {
+    /**
+     * 获取所有成绩
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param semester 学期（可选）
+     * @param courseId 课程ID（可选）
+     * @return 成绩列表
+     */
+    List<GradeDTO> getAllGrades(int pageNum, int pageSize, String semester, Long courseId);
 
-    @Autowired
-    private StudentMapper studentMapper;
+    /**
+     * 获取成绩总记录数
+     * @param semester 学期（可选）
+     * @param courseId 课程ID（可选）
+     * @return 总记录数
+     */
+    int getTotalCount(String semester, Long courseId);
 
-    @Autowired
-    private CourseMapper courseMapper;
+    /**
+     * 添加成绩
+     */
+    GradeDTO addGrade(GradeDTO gradeDTO);
 
-    @Transactional
-    public GradeDTO addGrade(GradeDTO gradeDTO) {
-        Student student = studentMapper.selectById(gradeDTO.getStudentId());
-        if (student == null) {
-            throw new RuntimeException("学生不存在");
-        }
-        
-        Course course = courseMapper.selectById(gradeDTO.getCourseId());
-        if (course == null) {
-            throw new RuntimeException("课程不存在");
-        }
+    /**
+     * 更新成绩
+     */
+    GradeDTO updateGrade(Long id, GradeDTO gradeDTO);
 
-        // 检查是否已存在该学生该课程该学期的成绩
-        Grade existingGrade = gradeMapper.findByStudentIdAndCourseIdAndSemester(
-            gradeDTO.getStudentId(), gradeDTO.getCourseId(), gradeDTO.getSemester());
-        if (existingGrade != null) {
-            throw new RuntimeException("该学生该课程该学期的成绩已存在");
-        }
+    /**
+     * 获取学生的所有成绩
+     */
+    List<GradeDTO> getGradesByStudent(Long studentId);
 
-        Grade grade = new Grade();
-        grade.setStudent(student);
-        grade.setCourse(course);
-        grade.setScore(gradeDTO.getScore());
-        grade.setSemester(gradeDTO.getSemester());
+    /**
+     * 获取课程的所有成绩
+     */
+    List<GradeDTO> getGradesByCourse(Long courseId);
 
-        gradeMapper.insert(grade);
-        return convertToDTO(grade);
-    }
+    /**
+     * 获取学生指定学期的成绩
+     */
+    List<GradeDTO> getGradesByStudentAndSemester(Long studentId, String semester);
 
-    @Transactional
-    public GradeDTO updateGrade(Long id, GradeDTO gradeDTO) {
-        Grade grade = gradeMapper.selectById(id);
-        if (grade == null) {
-            throw new RuntimeException("成绩记录不存在");
-        }
+    /**
+     * 获取课程指定学期的平均分
+     */
+    Double getAverageScoreByCourseAndSemester(Long courseId, String semester);
 
-        grade.setScore(gradeDTO.getScore());
-        grade.setSemester(gradeDTO.getSemester());
+    /**
+     * 获取课程指定学期的最高分
+     */
+    Double getMaxScoreByCourseAndSemester(Long courseId, String semester);
 
-        gradeMapper.update(grade);
-        return convertToDTO(grade);
-    }
+    /**
+     * 获取课程指定学期的最低分
+     */
+    Double getMinScoreByCourseAndSemester(Long courseId, String semester);
 
-    public List<GradeDTO> getGradesByStudent(Long studentId) {
-        return gradeMapper.findByStudentId(studentId).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-    }
+    /**
+     * 批量删除成绩记录
+     * @param ids 成绩ID列表
+     */
+    void batchDelete(List<Long> ids);
 
-    public List<GradeDTO> getGradesByCourse(Long courseId) {
-        return gradeMapper.findByCourseId(courseId).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-    }
+    /**
+     * 导入成绩数据
+     * @param file Excel文件
+     */
+    void importGrades(MultipartFile file);
 
-    public List<GradeDTO> getGradesByStudentAndSemester(Long studentId, String semester) {
-        return gradeMapper.findByStudentIdAndSemester(studentId, semester).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-    }
+    /**
+     * 导出成绩数据
+     * @param semester 学期（可选）
+     * @param courseId 课程ID（可选）
+     * @param response HTTP响应对象
+     */
+    void exportGrades(String semester, Long courseId, HttpServletResponse response);
 
-    public Double getAverageScoreByCourseAndSemester(Long courseId, String semester) {
-        return gradeMapper.getAverageScoreByCourseAndSemester(courseId, semester);
-    }
+    /**
+     * 根据学号查询成绩
+     * @param studentNo 学号
+     * @return 成绩列表
+     */
+    List<GradeDTO> getGradesByStudentNo(String studentNo);
 
-    public Double getMaxScoreByCourseAndSemester(Long courseId, String semester) {
-        return gradeMapper.getMaxScoreByCourseAndSemester(courseId, semester);
-    }
-
-    public Double getMinScoreByCourseAndSemester(Long courseId, String semester) {
-        return gradeMapper.getMinScoreByCourseAndSemester(courseId, semester);
-    }
-
-    private GradeDTO convertToDTO(Grade grade) {
-        GradeDTO dto = new GradeDTO();
-        BeanUtils.copyProperties(grade, dto);
-        dto.setStudentId(grade.getStudent().getId());
-        dto.setStudentName(grade.getStudent().getName());
-        dto.setStudentNo(grade.getStudent().getStudentNo());
-        dto.setCourseId(grade.getCourse().getId());
-        dto.setCourseName(grade.getCourse().getCourseName());
-        dto.setCourseCode(grade.getCourse().getCourseCode());
-        return dto;
-    }
+    /**
+     * 获取所有学期列表
+     * @return 学期列表
+     */
+    List<String> getAllSemesters();
 } 

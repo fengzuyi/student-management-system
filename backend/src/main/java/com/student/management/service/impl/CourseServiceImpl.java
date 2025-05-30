@@ -55,4 +55,9 @@ public class CourseServiceImpl implements CourseService {
             courseMapper.deleteById(id);
         }
     }
+
+    @Override
+    public Course findByCourseCode(String courseCode) {
+        return courseMapper.findByCourseCode(courseCode);
+    }
 } 

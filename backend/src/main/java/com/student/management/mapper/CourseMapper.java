@@ -24,4 +24,11 @@ public interface CourseMapper {
     int update(Course course);
     
     int deleteById(Long id);
+
+    /**
+     * 根据课程代码查询课程
+     * @param courseCode 课程代码
+     * @return 课程信息
+     */
+    Course findByCourseCode(@Param("courseCode") String courseCode);
 } 

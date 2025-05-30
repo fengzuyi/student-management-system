@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -52,7 +53,12 @@ public class SecurityConfig {
                 // 允许登录、登出和修改密码接口的访问
                 .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/auth/change-password").permitAll()
                 // 允许所有 OPTIONS 请求
-                .requestMatchers("OPTIONS", "/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // 允许所有 HTTP 方法
+                .requestMatchers(HttpMethod.GET, "/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/**").authenticated()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated())
             // 添加 JWT 过滤器

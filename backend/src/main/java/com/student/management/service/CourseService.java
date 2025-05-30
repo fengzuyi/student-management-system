@@ -11,4 +11,11 @@ public interface CourseService {
     void add(Course course);
     void update(Course course);
     void delete(List<Long> ids);
+
+    /**
+     * 根据课程代码查询课程
+     * @param courseCode 课程代码
+     * @return 课程信息
+     */
+    Course findByCourseCode(String courseCode);
 } 

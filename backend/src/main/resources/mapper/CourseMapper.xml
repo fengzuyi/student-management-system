@@ -78,4 +78,10 @@
     <delete id="deleteById">
         DELETE FROM course WHERE id = #{id}
     </delete>
+
+    <select id="findByCourseCode" resultType="com.student.management.entity.Course">
+        SELECT *
+        FROM course
+        WHERE course_code = #{courseCode}
+    </select>
 </mapper> 

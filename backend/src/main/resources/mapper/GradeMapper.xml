@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.student.management.mapper.GradeMapper">
+    <resultMap id="BaseResultMap" type="com.student.management.entity.Grade">
+        <id column="id" property="id"/>
+        <result column="student_id" property="student.id"/>
+        <result column="student_no" property="student.studentNo"/>
+        <result column="student_name" property="student.name"/>
+        <result column="course_id" property="course.id"/>
+        <result column="course_code" property="course.courseCode"/>
+        <result column="course_name" property="course.courseName"/>
+        <result column="score" property="score"/>
+        <result column="semester" property="semester"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        g.id, g.student_id, s.student_no, s.name as student_name,
+        g.course_id, c.course_code, c.course_name,
+        g.score, g.semester, g.create_time, g.update_time
+    </sql>
+
+    <select id="findByStudentId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM grade g
+        LEFT JOIN student s ON g.student_id = s.id
+        LEFT JOIN course c ON g.course_id = c.id
+        WHERE g.student_id = #{studentId}
+        ORDER BY g.semester DESC, c.course_code
+    </select>
+
+    <select id="findByCourseId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM grade g
+        LEFT JOIN student s ON g.student_id = s.id
+        LEFT JOIN course c ON g.course_id = c.id
+        WHERE g.course_id = #{courseId}
+        ORDER BY g.semester DESC, s.student_no
+    </select>
+
+    <select id="findByStudentIdAndSemester" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM grade g
+        LEFT JOIN student s ON g.student_id = s.id
+        LEFT JOIN course c ON g.course_id = c.id
+        WHERE g.student_id = #{studentId} AND g.semester = #{semester}
+        ORDER BY c.course_code
+    </select>
+
+    <select id="findByStudentIdAndCourseIdAndSemester" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM grade g
+        LEFT JOIN student s ON g.student_id = s.id
+        LEFT JOIN course c ON g.course_id = c.id
+        WHERE g.student_id = #{studentId}
+        AND g.course_id = #{courseId}
+        AND g.semester = #{semester}
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM grade g
+        LEFT JOIN student s ON g.student_id = s.id
+        LEFT JOIN course c ON g.course_id = c.id
+        WHERE g.id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.student.management.entity.Grade" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO grade (
+            student_id, course_id, score, semester
+        ) VALUES (
+            #{student.id}, #{course.id}, #{score}, #{semester}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.student.management.entity.Grade">
+        UPDATE grade
+        <set>
+            <if test="score != null">score = #{score},</if>
+            <if test="semester != null">semester = #{semester},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM grade WHERE id = #{id}
+    </delete>
+
+    <select id="getAverageScoreByCourseAndSemester" resultType="java.lang.Double">
+        SELECT AVG(score)
+        FROM grade
+        WHERE course_id = #{courseId} AND semester = #{semester}
+    </select>
+
+    <select id="getMaxScoreByCourseAndSemester" resultType="java.lang.Double">
+        SELECT MAX(score)
+        FROM grade
+        WHERE course_id = #{courseId} AND semester = #{semester}
+    </select>
+
+    <select id="getMinScoreByCourseAndSemester" resultType="java.lang.Double">
+        SELECT MIN(score)
+        FROM grade
+        WHERE course_id = #{courseId} AND semester = #{semester}
+    </select>
+
+    <delete id="deleteByStudentIds">
+        DELETE FROM grade WHERE student_id IN
+        <foreach collection="studentIds" item="studentId" open="(" separator="," close=")">
+            #{studentId}
+        </foreach>
+    </delete>
+</mapper> 

@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/student_management?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.student.management.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.student.management: debug
+
+jwt:
+  expiration: 604800000 # 7天，单位：毫秒
+  secret: "your-256-bit-secret-key-must-be-at-least-32-bytes-long-for-hs384"

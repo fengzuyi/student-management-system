@@ -23,5 +23,24 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.BASE_URL': JSON.stringify('/')
+  },
+  // 生产环境构建配置
+  build: {
+    outDir: 'dist', // 输出目录
+    assetsDir: 'assets', // 静态资源目录
+    minify: 'terser', // 压缩方式
+    terserOptions: {
+      compress: {
+        drop_console: true, // 生产环境移除 console
+        drop_debugger: true // 生产环境移除 debugger
+      }
+    },
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    }
   }
 }) 

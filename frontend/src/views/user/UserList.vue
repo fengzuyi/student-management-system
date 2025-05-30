@@ -25,7 +25,7 @@
           <el-input v-model="queryParams.realName" placeholder="请输入真实姓名" clearable />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="queryParams.role" placeholder="请选择角色" clearable>
+          <el-select v-model="queryParams.role" placeholder="请选择角色" clearable style="width: 200px">
             <el-option label="管理员" value="ADMIN" />
             <el-option label="教师" value="TEACHER" />
           </el-select>

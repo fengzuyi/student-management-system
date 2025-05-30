@@ -197,6 +197,7 @@ INSERT INTO course (course_code, course_name, credits) VALUES
 -- 生成100条用户数据
 INSERT INTO sys_user (username, password, real_name, role) VALUES
 ('admin', '123456', '系统管理员', 'ADMIN'),
+('aries', '123456', '系统管理员', 'ADMIN'),
 ('teacher1', '123456', '张老师', 'TEACHER'),
 ('teacher2', '123456', '李老师', 'TEACHER'),
 ('teacher3', '123456', '王老师', 'TEACHER'),

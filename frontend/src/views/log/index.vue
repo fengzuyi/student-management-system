@@ -7,7 +7,7 @@
             v-model="searchForm.operationType"
             placeholder="请输入操作类型"
             clearable
-            style="width: 150px"
+            style="width: 120px"
           ></el-input>
         </el-form-item>
         <el-form-item label="用户名" class="search-item">
@@ -15,7 +15,7 @@
             v-model="searchForm.username"
             placeholder="请输入用户名"
             clearable
-            style="width: 150px"
+            style="width: 120px"
           ></el-input>
         </el-form-item>
         <el-form-item label="时间范围" class="search-item">
@@ -26,13 +26,15 @@
             start-placeholder="开始日期"
             end-placeholder="结束日期"
             value-format="YYYY-MM-DD"
-            style="width: 320px"
+            style="width: 280px"
             @change="handleDateRangeChange"
           ></el-date-picker>
         </el-form-item>
         <el-form-item class="search-item">
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item class="search-item batch-delete">
           <el-button type="danger" :disabled="!selectedLogs.length" @click="handleBatchDelete">
             批量删除
           </el-button>
@@ -250,7 +252,12 @@ onMounted(() => {
 
 .search-item:last-child {
   margin-right: 0;
+  margin-left: 0;
+}
+
+.search-item.batch-delete {
   margin-left: auto;
+  margin-right: 0;
 }
 
 .search-form :deep(.el-form-item__label) {

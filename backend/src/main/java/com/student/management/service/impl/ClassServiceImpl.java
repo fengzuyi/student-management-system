@@ -1,8 +1,10 @@
 package com.student.management.service.impl;
 
 import com.student.management.entity.Class;
+import com.student.management.entity.Student;
 import com.student.management.mapper.ClassMapper;
 import com.student.management.mapper.StudentMapper;
+import com.student.management.mapper.GradeMapper;
 import com.student.management.service.ClassService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 public class ClassServiceImpl implements ClassService {
@@ -20,6 +24,9 @@ public class ClassServiceImpl implements ClassService {
 
     @Autowired
     private StudentMapper studentMapper;
+
+    @Autowired
+    private GradeMapper gradeMapper;
 
     @Override
     public List<Class> getList(String className, String grade, String major, Integer pageNum, Integer pageSize) {
@@ -59,23 +66,31 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        // 检查班级下是否有学生
-        if (studentMapper.getCount(null, null, id) > 0) {
-            throw new RuntimeException("班级下存在学生，无法删除");
-        }
-        classMapper.deleteById(id);
-    }
-
-    @Override
-    @Transactional
     public void batchDelete(List<Long> ids) {
-        // 检查班级下是否有学生
-        for (Long id : ids) {
-            if (studentMapper.getCount(null, null, id) > 0) {
-                throw new RuntimeException("班级下存在学生，无法删除");
+        if (ids == null || ids.isEmpty()) {
+            throw new RuntimeException("请选择要删除的班级");
+        }
+        
+        // 获取所有要删除的班级下的学生ID
+        List<Long> allStudentIds = new ArrayList<>();
+        for (Long classId : ids) {
+            List<Student> students = studentMapper.selectByClassId(classId);
+            if (!students.isEmpty()) {
+                List<Long> studentIds = students.stream()
+                    .map(Student::getId)
+                    .collect(Collectors.toList());
+                allStudentIds.addAll(studentIds);
             }
         }
+        
+        // 如果有学生，先删除相关的成绩记录
+        if (!allStudentIds.isEmpty()) {
+            gradeMapper.deleteByStudentIds(allStudentIds);
+            // 删除学生记录
+            studentMapper.batchDelete(allStudentIds);
+        }
+        
+        // 最后删除班级
         classMapper.batchDelete(ids);
     }
 

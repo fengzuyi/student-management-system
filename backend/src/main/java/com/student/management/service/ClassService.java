@@ -9,7 +9,6 @@ public interface ClassService {
     Class getById(Long id);
     void add(Class clazz);
     void update(Class clazz);
-    void delete(Long id);
     void updateStudentCount(Long id, Integer count);
     byte[] exportExcel();
     void batchDelete(List<Long> ids);

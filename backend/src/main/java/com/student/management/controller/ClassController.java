@@ -16,6 +16,9 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Collections;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/class")
@@ -66,18 +69,28 @@ public class ClassController {
         return Result.success(null);
     }
 
-    @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        logger.info("删除班级，id={}", id);
-        classService.delete(id);
-        return Result.success(null);
-    }
-
-    @DeleteMapping("/batch")
-    public Result<Void> batchDelete(@RequestBody List<Long> ids) {
-        logger.info("批量删除班级，ids={}", ids);
-        classService.batchDelete(ids);
-        return Result.success(null);
+    @DeleteMapping("/{ids}")
+    public Result<Void> delete(@PathVariable String ids) {
+        logger.info("删除班级，ids={}", ids);
+        try {
+            List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+            
+            if (idList.isEmpty()) {
+                return Result.error("请选择要删除的班级");
+            }
+            
+            classService.batchDelete(idList);
+            return Result.success(null);
+        } catch (NumberFormatException e) {
+            logger.error("删除班级失败：ID格式不正确", e);
+            return Result.error("删除班级失败：ID格式不正确");
+        } catch (Exception e) {
+            logger.error("删除班级失败：{}", e.getMessage());
+            return Result.error("删除班级失败：" + e.getMessage());
+        }
     }
 
     @GetMapping("/export")

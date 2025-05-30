@@ -243,7 +243,7 @@ const handleDelete = (row: ClassInfo) => {
     }
   ).then(async () => {
     try {
-      await deleteClass(row.id)
+      await deleteClass([row.id!])
       ElMessage.success('删除成功')
       getList()
     } catch (error) {

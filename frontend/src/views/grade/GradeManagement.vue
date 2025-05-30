@@ -467,8 +467,11 @@ const handleModalOk = async () => {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       router.push('/login')
+    } else if (error.response?.data?.message) {
+      // 显示后端返回的具体错误信息
+      ElMessage.error(error.response.data.message)
     } else {
-      ElMessage.error(error.response?.data?.message || '操作失败')
+      ElMessage.error('操作失败，请稍后重试')
     }
   }
 }
@@ -524,8 +527,11 @@ const handleDelete = async (row: Grade) => {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       router.push('/login')
+    } else if (error.response?.data?.message) {
+      // 显示后端返回的具体错误信息
+      ElMessage.error(error.response.data.message)
     } else {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error('删除失败，请稍后重试')
     }
   }
 }
@@ -552,8 +558,11 @@ const handleBatchDelete = async () => {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       router.push('/login')
+    } else if (error.response?.data?.message) {
+      // 显示后端返回的具体错误信息
+      ElMessage.error(error.response.data.message)
     } else {
-      ElMessage.error(error.response?.data?.message || '批量删除失败')
+      ElMessage.error('批量删除失败，请稍后重试')
     }
   }
 }
@@ -596,8 +605,11 @@ const handleExport = async () => {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       router.push('/login')
+    } else if (error.response?.data?.message) {
+      // 显示后端返回的具体错误信息
+      ElMessage.error(error.response.data.message)
     } else {
-      ElMessage.error(error.response?.data?.message || '导出失败')
+      ElMessage.error('导出失败，请稍后重试')
     }
   }
 }
@@ -619,8 +631,11 @@ const handleImportError = (error: any) => {
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
     router.push('/login')
+  } else if (error.response?.data?.message) {
+    // 显示后端返回的具体错误信息
+    ElMessage.error(error.response.data.message)
   } else {
-    ElMessage.error(error.response?.data?.message || '导入失败')
+    ElMessage.error('导入失败，请稍后重试')
   }
 }
 

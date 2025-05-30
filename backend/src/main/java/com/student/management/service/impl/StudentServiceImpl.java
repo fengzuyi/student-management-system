@@ -130,6 +130,9 @@ public class StudentServiceImpl implements StudentService {
             }
         }
         
+        // 先删除相关的成绩记录
+        gradeMapper.deleteByStudentIds(ids);
+        
         // 删除学生
         studentMapper.batchDelete(ids);
         

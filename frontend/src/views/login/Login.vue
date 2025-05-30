@@ -7,6 +7,7 @@
         :model="form"
         :rules="loginRules"
         class="login-form"
+        @keyup.enter="handleLogin"
       >
         <el-form-item prop="username">
           <el-input

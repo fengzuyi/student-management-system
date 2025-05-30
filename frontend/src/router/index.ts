@@ -80,6 +80,16 @@ const routes: Array<RouteRecordRaw> = [
               icon: 'UserFilled',
               roles: ['ADMIN']
             }
+          },
+          {
+            path: 'log-management',
+            name: 'LogManagement',
+            component: () => import('../views/log/index.vue'),
+            meta: {
+              title: '日志管理',
+              icon: 'Document',
+              roles: ['ADMIN']
+            }
           }
         ]
       }

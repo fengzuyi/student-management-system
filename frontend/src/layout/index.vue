@@ -47,6 +47,13 @@
               <el-icon><UserFilled /></el-icon>
               <span>用户管理</span>
             </el-menu-item>
+            <el-menu-item 
+              v-if="userInfo.role === 'ADMIN'"
+              index="/student-management/log-management"
+            >
+              <el-icon><List /></el-icon>
+              <span>日志管理</span>
+            </el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -106,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { User, School, Document, House, SwitchButton, Key, UserFilled, Reading } from '@element-plus/icons-vue'
+import { User, School, Document, House, SwitchButton, Key, UserFilled, Reading, List } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { logout, changePassword } from '@/api/auth'

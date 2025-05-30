@@ -2,6 +2,7 @@ package com.student.management.service.impl;
 
 import com.student.management.entity.Course;
 import com.student.management.mapper.CourseMapper;
+import com.student.management.mapper.GradeMapper;
 import com.student.management.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,9 @@ public class CourseServiceImpl implements CourseService {
     
     @Autowired
     private CourseMapper courseMapper;
+
+    @Autowired
+    private GradeMapper gradeMapper;
 
     @Override
     public List<Course> getList(String courseCode, String courseName, Integer pageNum, Integer pageSize) {
@@ -51,6 +55,14 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public void delete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new RuntimeException("请选择要删除的课程");
+        }
+        
+        // 先删除相关的成绩记录
+        gradeMapper.deleteByCourseIds(ids);
+        
+        // 再删除课程
         for (Long id : ids) {
             courseMapper.deleteById(id);
         }

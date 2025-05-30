@@ -120,6 +120,13 @@
         </foreach>
     </delete>
 
+    <delete id="deleteByCourseIds">
+        DELETE FROM grade WHERE course_id IN
+        <foreach collection="courseIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
     <select id="findStudentIdByStudentNo" resultType="java.lang.Long">
         SELECT id FROM student WHERE student_no = #{studentNo}
     </select>

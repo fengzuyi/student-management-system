@@ -47,6 +47,12 @@ public interface GradeMapper {
     void batchDelete(@Param("ids") List<Long> ids);
 
     /**
+     * 根据课程ID列表删除相关成绩记录
+     * @param courseIds 课程ID列表
+     */
+    void deleteByCourseIds(@Param("courseIds") List<Long> courseIds);
+
+    /**
      * 根据学号查询学生ID
      * @param studentNo 学号
      * @return 学生ID

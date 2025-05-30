@@ -32,6 +32,10 @@
               <el-icon><House /></el-icon>
               <span>班级管理</span>
             </el-menu-item>
+            <el-menu-item index="/student-management/course-list">
+              <el-icon><Reading /></el-icon>
+              <span>课程管理</span>
+            </el-menu-item>
             <el-menu-item index="/student-management/grade-management">
               <el-icon><Document /></el-icon>
               <span>成绩管理</span>
@@ -102,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { User, School, Document, House, SwitchButton, Key, UserFilled } from '@element-plus/icons-vue'
+import { User, School, Document, House, SwitchButton, Key, UserFilled, Reading } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { logout, changePassword } from '@/api/auth'

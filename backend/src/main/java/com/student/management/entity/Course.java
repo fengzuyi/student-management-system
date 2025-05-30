@@ -8,7 +8,7 @@ public class Course {
     private Long id;
     private String courseCode;
     private String courseName;
-    private Integer credits;
+    private Double credits;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 } 

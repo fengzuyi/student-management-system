@@ -53,6 +53,15 @@ const routes: Array<RouteRecordRaw> = [
             }
           },
           {
+            path: 'course-list',
+            name: 'CourseList',
+            component: () => import('../views/course/index.vue'),
+            meta: { 
+              title: '课程管理',
+              icon: 'Reading'
+            }
+          },
+          {
             path: 'grade-management',
             name: 'GradeManagement',
             component: () => import('../views/grade/GradeManagement.vue'),

@@ -10,16 +10,51 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        id, course_code, course_name, credits, create_time, update_time
+    </sql>
+
     <select id="selectList" resultMap="BaseResultMap">
-        SELECT * FROM course ORDER BY id DESC
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM course
+        <where>
+            <if test="courseCode != null and courseCode != ''">
+                AND course_code LIKE CONCAT('%', #{courseCode}, '%')
+            </if>
+            <if test="courseName != null and courseName != ''">
+                AND course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM course
+        <where>
+            <if test="courseCode != null and courseCode != ''">
+                AND course_code LIKE CONCAT('%', #{courseCode}, '%')
+            </if>
+            <if test="courseName != null and courseName != ''">
+                AND course_name LIKE CONCAT('%', #{courseName}, '%')
+            </if>
+        </where>
     </select>
 
     <select id="selectById" resultMap="BaseResultMap">
-        SELECT * FROM course WHERE id = #{id}
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM course
+        WHERE id = #{id}
     </select>
 
     <select id="selectByCourseCode" resultMap="BaseResultMap">
-        SELECT * FROM course WHERE course_code = #{courseCode}
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM course
+        WHERE course_code = #{courseCode}
     </select>
 
     <insert id="insert" parameterType="com.student.management.entity.Course" useGeneratedKeys="true" keyProperty="id">

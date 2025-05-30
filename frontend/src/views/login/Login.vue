@@ -1,6 +1,20 @@
 <template>
   <div class="login-container">
     <div class="login-box">
+      <div class="help-button">
+        <el-tooltip
+          content="如需登录账号，请联系管理员ariesplus@qq.com"
+          placement="right"
+          effect="light"
+        >
+          <el-button
+            type="primary"
+            :icon="QuestionFilled"
+            circle
+            class="help-icon"
+          />
+        </el-tooltip>
+      </div>
       <h2>学生管理系统</h2>
       <el-form
         ref="loginForm"
@@ -44,7 +58,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, QuestionFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import request from '@/utils/request'
 
@@ -106,6 +120,7 @@ const handleLogin = async () => {
   background: rgba(255, 255, 255, 0.25);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .login-box h2 {
@@ -120,5 +135,25 @@ const handleLogin = async () => {
 
 .login-button {
   width: 100%;
+}
+
+.help-button {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+}
+
+.help-icon {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  color: #409EFF;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.help-icon:hover {
+  background-color: #409EFF;
+  color: white;
 }
 </style> 

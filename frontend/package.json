@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_NO_WARNINGS=1 vite",
+    "dev": "cross-env NODE_NO_WARNINGS=1 vite --host",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },

@@ -9,6 +9,16 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper {
+    List<User> findList(@Param("username") String username,
+                       @Param("realName") String realName,
+                       @Param("role") String role,
+                       @Param("offset") Integer offset,
+                       @Param("limit") Integer limit);
+    
+    int findCount(@Param("username") String username,
+                 @Param("realName") String realName,
+                 @Param("role") String role);
+    
     User findByUsername(String username);
     
     User findById(Long id);

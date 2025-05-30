@@ -57,42 +57,61 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public void add(Student student) {
-        // 检查学号是否已存在
-        if (studentMapper.selectByStudentNo(student.getStudentNo()) != null) {
-            throw new RuntimeException("学号已存在");
-        }
         // 检查班级是否存在
-        Class classInfo = classMapper.selectById(student.getClassId());
-        if (classInfo == null) {
+        Class clazz = classMapper.selectById(student.getClassId());
+        if (clazz == null) {
             throw new RuntimeException("班级不存在");
         }
+        
+        // 检查学号是否已存在
+        Student existingStudent = studentMapper.selectByStudentNo(student.getStudentNo());
+        if (existingStudent != null) {
+            throw new RuntimeException("学号已存在");
+        }
+        
+        // 插入学生信息
         studentMapper.insert(student);
+        
         // 更新班级学生数量
-        int count = studentMapper.getCount(null, null, classInfo.getId());
-        classMapper.updateStudentCount(classInfo.getId(), count);
+        List<Student> classStudents = studentMapper.selectByClassId(student.getClassId());
+        classMapper.updateStudentCount(student.getClassId(), classStudents.size());
     }
 
     @Override
     @Transactional
     public void update(Student student) {
+        // 检查学生是否存在
         Student existingStudent = studentMapper.selectById(student.getId());
         if (existingStudent == null) {
             throw new RuntimeException("学生不存在");
         }
-        // 检查学号是否已被其他学生使用
-        Student other = studentMapper.selectByStudentNo(student.getStudentNo());
-        if (other != null && !other.getId().equals(student.getId())) {
-            throw new RuntimeException("学号已被其他学生使用");
+        
+        // 如果修改了班级，检查新班级是否存在
+        if (!existingStudent.getClassId().equals(student.getClassId())) {
+            Class clazz = classMapper.selectById(student.getClassId());
+            if (clazz == null) {
+                throw new RuntimeException("班级不存在");
+            }
         }
-        // 检查班级是否存在
-        Class classInfo = classMapper.selectById(student.getClassId());
-        if (classInfo == null) {
-            throw new RuntimeException("班级不存在");
+        
+        // 如果修改了学号，检查新学号是否已存在
+        if (!existingStudent.getStudentNo().equals(student.getStudentNo())) {
+            Student studentWithSameNo = studentMapper.selectByStudentNo(student.getStudentNo());
+            if (studentWithSameNo != null) {
+                throw new RuntimeException("学号已存在");
+            }
         }
+        
+        // 更新学生信息
         studentMapper.update(student);
-        // 更新班级学生数量
-        int count = studentMapper.getCount(null, null, classInfo.getId());
-        classMapper.updateStudentCount(classInfo.getId(), count);
+        
+        // 如果修改了班级，更新两个班级的学生数量
+        if (!existingStudent.getClassId().equals(student.getClassId())) {
+            List<Student> oldClassStudents = studentMapper.selectByClassId(existingStudent.getClassId());
+            List<Student> newClassStudents = studentMapper.selectByClassId(student.getClassId());
+            classMapper.updateStudentCount(existingStudent.getClassId(), oldClassStudents.size());
+            classMapper.updateStudentCount(student.getClassId(), newClassStudents.size());
+        }
     }
 
     @Override
@@ -102,151 +121,123 @@ public class StudentServiceImpl implements StudentService {
             throw new RuntimeException("请选择要删除的学生");
         }
         
-        // 获取所有要删除的学生信息，用于更新班级学生数量
-        Map<Long, Integer> classStudentCounts = new HashMap<>();
+        // 获取要删除的学生信息，用于更新班级学生数量
+        Map<Long, Long> classIdMap = new HashMap<>();
         for (Long id : ids) {
             Student student = studentMapper.selectById(id);
-            if (student == null) {
-                throw new RuntimeException("学生不存在，id: " + id);
+            if (student != null) {
+                classIdMap.put(id, student.getClassId());
             }
-            Long classId = student.getClassId();
-            classStudentCounts.merge(classId, 1, Integer::sum);
         }
         
-        // 先删除相关的成绩记录
-        gradeMapper.deleteByStudentIds(ids);
-        
-        // 批量删除学生
+        // 删除学生
         studentMapper.batchDelete(ids);
         
         // 更新相关班级的学生数量
-        for (Map.Entry<Long, Integer> entry : classStudentCounts.entrySet()) {
-            Long classId = entry.getKey();
-            int count = studentMapper.getCount(null, null, classId);
-            classMapper.updateStudentCount(classId, count);
+        for (Long classId : classIdMap.values()) {
+            List<Student> classStudents = studentMapper.selectByClassId(classId);
+            classMapper.updateStudentCount(classId, classStudents.size());
         }
     }
 
     @Override
     @Transactional
     public Map<String, Object> importExcel(MultipartFile file) {
-        List<String> skippedStudents = new ArrayList<>();
-        List<Student> importedStudents = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
+        List<String> successList = new ArrayList<>();
+        List<String> errorList = new ArrayList<>();
         
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
-            // 获取表头
-            Row headerRow = sheet.getRow(0);
-            if (headerRow == null) {
-                throw new RuntimeException("Excel文件格式不正确，缺少表头");
-            }
-            // 验证表头
-            String[] expectedHeaders = {"学号", "姓名", "班级", "性别", "电话", "邮箱"};
-            for (int i = 0; i < expectedHeaders.length; i++) {
-                Cell cell = headerRow.getCell(i);
-                if (cell == null || !expectedHeaders[i].equals(getCellValueAsString(cell))) {
-                    throw new RuntimeException("Excel文件格式不正确，表头不匹配");
-                }
-            }
-            // 获取班级映射
-            List<Class> classList = classMapper.selectList();
+            int totalRows = sheet.getPhysicalNumberOfRows();
+            
+            // 获取所有班级信息
+            List<Class> classList = classMapper.selectList(null, null, null, 0, Integer.MAX_VALUE);
             Map<String, Long> classNameToIdMap = classList.stream()
                 .collect(Collectors.toMap(Class::getClassName, Class::getId));
-            // 读取数据
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            
+            // 从第二行开始读取数据（跳过表头）
+            for (int i = 1; i < totalRows; i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
-                Student student = new Student();
-                // 学号
-                Cell studentNoCell = row.getCell(0);
-                if (studentNoCell == null) {
-                    throw new RuntimeException("第" + (i + 1) + "行学号不能为空");
-                }
-                String studentNo = getCellValueAsString(studentNoCell);
-                // 检查学号是否已存在
-                if (studentMapper.selectByStudentNo(studentNo) != null) {
-                    skippedStudents.add("第" + (i + 1) + "行学号已存在：" + studentNo);
-                    continue;
-                }
-                student.setStudentNo(studentNo);
-                // 姓名
-                Cell nameCell = row.getCell(1);
-                if (nameCell == null) {
-                    throw new RuntimeException("第" + (i + 1) + "行姓名不能为空");
-                }
-                student.setName(getCellValueAsString(nameCell));
-                // 班级
-                Cell classCell = row.getCell(2);
-                if (classCell == null) {
-                    throw new RuntimeException("第" + (i + 1) + "行班级不能为空");
-                }
-                String className = getCellValueAsString(classCell);
-                Long classId = classNameToIdMap.get(className);
-                if (classId == null) {
-                    throw new RuntimeException("第" + (i + 1) + "行班级不存在：" + className);
-                }
-                student.setClassId(classId);
-                // 性别
-                Cell genderCell = row.getCell(3);
-                if (genderCell == null) {
-                    throw new RuntimeException("第" + (i + 1) + "行性别不能为空");
-                }
-                String gender = getCellValueAsString(genderCell);
-                if (!"男".equals(gender) && !"女".equals(gender)) {
-                    throw new RuntimeException("第" + (i + 1) + "行性别格式不正确，应为'男'或'女'");
-                }
-                student.setGender(gender);
-                // 电话
-                Cell phoneCell = row.getCell(4);
-                if (phoneCell != null) {
-                    String phone = getCellValueAsString(phoneCell);
-                    if (!phone.matches("^1[3-9]\\d{9}$")) {
-                        throw new RuntimeException("第" + (i + 1) + "行电话格式不正确");
+                
+                try {
+                    String studentNo = getCellValueAsString(row.getCell(0));
+                    String name = getCellValueAsString(row.getCell(1));
+                    String className = getCellValueAsString(row.getCell(2));
+                    String gender = getCellValueAsString(row.getCell(3));
+                    String phone = getCellValueAsString(row.getCell(4));
+                    String email = getCellValueAsString(row.getCell(5));
+                    
+                    // 验证必填字段
+                    if (studentNo == null || name == null || className == null || gender == null) {
+                        errorList.add(String.format("第%d行：学号、姓名、班级、性别为必填项", i + 1));
+                        continue;
                     }
+                    
+                    // 验证学号格式
+                    if (!studentNo.matches("\\d{10}")) {
+                        errorList.add(String.format("第%d行：学号必须为10位数字", i + 1));
+                        continue;
+                    }
+                    
+                    // 验证手机号格式
+                    if (phone != null && !phone.matches("^1[3-9]\\d{9}$")) {
+                        errorList.add(String.format("第%d行：手机号格式不正确", i + 1));
+                        continue;
+                    }
+                    
+                    // 验证邮箱格式
+                    if (email != null && !email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+                        errorList.add(String.format("第%d行：邮箱格式不正确", i + 1));
+                        continue;
+                    }
+                    
+                    // 检查班级是否存在
+                    Long classId = classNameToIdMap.get(className);
+                    if (classId == null) {
+                        errorList.add(String.format("第%d行：班级'%s'不存在", i + 1, className));
+                        continue;
+                    }
+                    
+                    // 检查学号是否已存在
+                    Student existingStudent = studentMapper.selectByStudentNo(studentNo);
+                    if (existingStudent != null) {
+                        errorList.add(String.format("第%d行：学号'%s'已存在", i + 1, studentNo));
+                        continue;
+                    }
+                    
+                    // 创建学生对象
+                    Student student = new Student();
+                    student.setStudentNo(studentNo);
+                    student.setName(name);
+                    student.setClassId(classId);
+                    student.setGender(gender);
                     student.setPhone(phone);
-                }
-                // 邮箱
-                Cell emailCell = row.getCell(5);
-                if (emailCell != null) {
-                    String email = getCellValueAsString(emailCell);
-                    if (!email.matches("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
-                        throw new RuntimeException("第" + (i + 1) + "行邮箱格式不正确");
-                    }
                     student.setEmail(email);
+                    
+                    // 保存学生信息
+                    studentMapper.insert(student);
+                    successList.add(String.format("第%d行：%s-%s", i + 1, studentNo, name));
+                    
+                } catch (Exception e) {
+                    errorList.add(String.format("第%d行：%s", i + 1, e.getMessage()));
                 }
-                importedStudents.add(student);
-            }
-            
-            // 批量保存数据
-            for (Student student : importedStudents) {
-                studentMapper.insert(student);
             }
             
             // 更新班级学生数量
-            for (Map.Entry<String, Long> entry : classNameToIdMap.entrySet()) {
-                int count = studentMapper.getCount(null, null, entry.getValue());
-                classMapper.updateStudentCount(entry.getValue(), count);
+            for (Class clazz : classList) {
+                List<Student> classStudents = studentMapper.selectByClassId(clazz.getId());
+                classMapper.updateStudentCount(clazz.getId(), classStudents.size());
             }
-            
-            // 返回导入结果
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("importedCount", importedStudents.size());
-            result.put("skippedCount", skippedStudents.size());
-            if (!skippedStudents.isEmpty()) {
-                result.put("skippedStudents", skippedStudents);
-                result.put("message", "导入完成，但以下学生因学号重复被跳过：\n" + String.join("\n", skippedStudents));
-            } else {
-                result.put("message", "导入成功，共导入 " + importedStudents.size() + " 条数据");
-            }
-            return result;
             
         } catch (Exception e) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", false);
-            result.put("message", "导入Excel失败：" + e.getMessage());
-            return result;
+            throw new RuntimeException("导入Excel失败：" + e.getMessage());
         }
+        
+        result.put("success", successList);
+        result.put("error", errorList);
+        return result;
     }
 
     @Override
@@ -255,31 +246,27 @@ public class StudentServiceImpl implements StudentService {
             Sheet sheet = workbook.createSheet("学生信息");
             // 创建表头
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"学号", "姓名", "班级", "性别", "电话", "邮箱"};
+            String[] headers = {"学号", "姓名", "班级", "性别", "联系电话", "邮箱"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
             }
-            
             // 填充数据
-            List<Student> students = studentMapper.selectAll();
-            for (int i = 0; i < students.size(); i++) {
+            List<Student> studentList = getList(null, null, null, 1, Integer.MAX_VALUE);
+            for (int i = 0; i < studentList.size(); i++) {
                 Row row = sheet.createRow(i + 1);
-                Student student = students.get(i);
+                Student student = studentList.get(i);
                 row.createCell(0).setCellValue(student.getStudentNo());
                 row.createCell(1).setCellValue(student.getName());
-                // 直接使用 SQL 查询中获取的班级名称
                 row.createCell(2).setCellValue(student.getClassInfo() != null ? student.getClassInfo().getClassName() : "");
                 row.createCell(3).setCellValue(student.getGender());
                 row.createCell(4).setCellValue(student.getPhone());
                 row.createCell(5).setCellValue(student.getEmail());
             }
-            
             // 自动调整列宽
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
             }
-            
             // 导出为字节数组
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);
@@ -375,5 +362,9 @@ public class StudentServiceImpl implements StudentService {
             default:
                 return "";
         }
+    }
+
+    private List<Class> getAllClasses() {
+        return classMapper.selectList(null, null, null, 0, Integer.MAX_VALUE);
     }
 } 

@@ -12,16 +12,61 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        id, username, password, real_name, role, create_time, update_time
+    </sql>
+
+    <select id="findList" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                AND real_name LIKE CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findCount" resultType="int">
+        SELECT COUNT(*)
+        FROM sys_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                AND real_name LIKE CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+        </where>
+    </select>
+
     <select id="findByUsername" resultMap="BaseResultMap">
-        SELECT * FROM sys_user WHERE username = #{username}
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE username = #{username}
     </select>
 
     <select id="findById" resultMap="BaseResultMap">
-        SELECT * FROM sys_user WHERE id = #{id}
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE id = #{id}
     </select>
 
     <select id="findAll" resultMap="BaseResultMap">
-        SELECT * FROM sys_user ORDER BY id DESC
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM sys_user ORDER BY id DESC
     </select>
 
     <insert id="insert" parameterType="com.student.management.entity.User" useGeneratedKeys="true" keyProperty="id">

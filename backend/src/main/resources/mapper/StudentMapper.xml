@@ -109,6 +109,10 @@
         </foreach>
     </delete>
 
+    <delete id="deleteByClassId">
+        DELETE FROM student WHERE class_id = #{classId}
+    </delete>
+
     <select id="selectByClassId" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>

@@ -7,7 +7,20 @@ import java.util.List;
 
 @Mapper
 public interface ClassMapper {
-    List<Class> selectList();
+    List<Class> selectList(@Param("className") String className,
+                          @Param("grade") String grade,
+                          @Param("major") String major,
+                          @Param("offset") Integer offset,
+                          @Param("limit") Integer limit);
+    
+    int selectCount(@Param("className") String className,
+                   @Param("grade") String grade,
+                   @Param("major") String major);
+    
+    int selectCountExcludeSelf(@Param("className") String className,
+                             @Param("grade") String grade,
+                             @Param("major") String major,
+                             @Param("excludeId") Long excludeId);
     
     Class selectById(Long id);
     

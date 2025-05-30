@@ -1,57 +1,92 @@
 <template>
   <div class="user-list-container">
-    <div class="header">
-      <h2>用户管理</h2>
-      <div class="header-buttons">
-        <el-button 
-          type="danger" 
-          :disabled="!selectedUsers.length"
-          @click="handleBatchDelete"
-        >
-          批量删除
-        </el-button>
-        <el-button type="primary" @click="handleAdd" :icon="Plus">添加用户</el-button>
-      </div>
-    </div>
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>用户管理</span>
+          <div class="header-operations">
+            <el-button 
+              type="danger" 
+              :disabled="!selectedUsers.length"
+              @click="handleBatchDelete"
+            >
+              批量删除
+            </el-button>
+            <el-button type="primary" @click="handleAdd" :icon="Plus">添加用户</el-button>
+          </div>
+        </div>
+      </template>
 
-    <el-table
-      v-loading="loading"
-      :data="userList"
-      border
-      style="width: 100%"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="55" />
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="username" label="用户名" width="150" />
-      <el-table-column prop="password" label="密码" width="150" />
-      <el-table-column prop="realName" label="真实姓名" width="150" />
-      <el-table-column prop="role" label="角色" width="120">
-        <template #default="{ row }">
-          <el-tag :type="row.role === 'ADMIN' ? 'danger' : 'success'">
-            {{ row.role === 'ADMIN' ? '管理员' : '教师' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180">
-        <template #default="{ row }">
-          {{ formatDateTime(row.createTime) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" fixed="right" width="200">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button
-            type="danger"
-            link
-            @click="handleDelete(row)"
-            :disabled="row.id === currentUserId"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-form :inline="true" :model="queryParams" class="demo-form-inline">
+        <el-form-item label="用户名">
+          <el-input v-model="queryParams.username" placeholder="请输入用户名" clearable />
+        </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="queryParams.realName" placeholder="请输入真实姓名" clearable />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="queryParams.role" placeholder="请选择角色" clearable>
+            <el-option label="管理员" value="ADMIN" />
+            <el-option label="教师" value="TEACHER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleQuery">查询</el-button>
+          <el-button @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table
+        v-loading="loading"
+        :data="userList"
+        border
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="username" label="用户名" width="150" />
+        <el-table-column prop="password" label="密码" width="150" />
+        <el-table-column prop="realName" label="真实姓名" width="150" />
+        <el-table-column prop="role" label="角色" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.role === 'ADMIN' ? 'danger' : 'success'">
+              {{ row.role === 'ADMIN' ? '管理员' : '教师' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" fixed="right" width="200">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+            <el-button
+              type="danger"
+              link
+              @click="handleDelete(row)"
+              :disabled="row.id === currentUserId"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="queryParams.pageNum"
+          v-model:page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </el-card>
 
     <!-- 用户表单对话框 -->
     <el-dialog
@@ -108,15 +143,26 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { listUsers, createUser, updateUser, deleteUser, type UserDTO } from '@/api/user'
+import { listUsers, createUser, updateUser, deleteUser, type UserDTO, type UserQuery } from '@/api/user'
 import { formatDateTime } from '@/utils/format'
 
+// 查询参数
+const queryParams = reactive<UserQuery>({
+  username: '',
+  realName: '',
+  role: undefined,
+  pageNum: 1,
+  pageSize: 10
+})
+
+// 数据列表
+const userList = ref<UserDTO[]>([])
+const total = ref(0)
 const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
 const dialogType = ref<'add' | 'edit'>('add')
 const formRef = ref<FormInstance>()
-const userList = ref<UserDTO[]>([])
 const currentUserId = ref<number>()
 const selectedUsers = ref<UserDTO[]>([])
 
@@ -151,9 +197,9 @@ const rules = reactive<FormRules>({
 const fetchUserList = async () => {
   loading.value = true
   try {
-    const res = await listUsers()
-    console.log('获取到的用户列表数据:', res.data)
-    userList.value = res.data
+    const res = await listUsers(queryParams)
+    userList.value = res.data.list
+    total.value = res.data.total
     // 获取当前用户ID
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
     currentUserId.value = userInfo.id
@@ -163,6 +209,32 @@ const fetchUserList = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 查询按钮操作
+const handleQuery = () => {
+  queryParams.pageNum = 1
+  fetchUserList()
+}
+
+// 重置按钮操作
+const resetQuery = () => {
+  queryParams.username = ''
+  queryParams.realName = ''
+  queryParams.role = undefined
+  handleQuery()
+}
+
+// 分页大小改变
+const handleSizeChange = (val: number) => {
+  queryParams.pageSize = val
+  fetchUserList()
+}
+
+// 页码改变
+const handleCurrentChange = (val: number) => {
+  queryParams.pageNum = val
+  fetchUserList()
 }
 
 // 添加用户
@@ -268,24 +340,62 @@ onMounted(() => {
 
 <style scoped>
 .user-list-container {
-  padding: 20px;
+  height: 100%;
+  background-color: #f0f2f5;
+  display: flex;
+  flex-direction: column;
 }
 
-.header {
+.el-card {
+  background-color: #fff;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.el-card :deep(.el-card__body) {
+  flex: 1;
+  padding: 10px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.header h2 {
-  margin: 0;
-  font-size: 20px;
-  color: #303133;
-}
-
-.header-buttons {
+.header-operations {
   display: flex;
   gap: 10px;
+}
+
+.demo-form-inline {
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.pagination-container {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: flex-end;
+  background-color: #fff;
+  border-top: 1px solid #ebeef5;
+  margin-top: auto;
+}
+
+.el-table {
+  margin: 10px 0;
+  flex: 1;
+  overflow: auto;
 }
 </style> 

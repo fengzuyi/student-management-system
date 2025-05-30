@@ -32,4 +32,6 @@ public interface StudentMapper {
     List<Student> selectByClassId(Long classId);
     
     List<Student> selectAll();
+    
+    int deleteByClassId(Long classId);
 } 

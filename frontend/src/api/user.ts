@@ -9,11 +9,20 @@ export interface UserDTO {
   createTime?: string
 }
 
+export interface UserQuery {
+  username?: string
+  realName?: string
+  role?: 'ADMIN' | 'TEACHER'
+  pageNum: number
+  pageSize: number
+}
+
 // 获取用户列表
-export function listUsers() {
+export function listUsers(params: UserQuery) {
   return request({
     url: '/api/users',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 

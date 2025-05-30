@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.net.URLEncoder;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/class")
@@ -24,11 +26,24 @@ public class ClassController {
     private ClassService classService;
 
     @GetMapping("/list")
-    public Result<List<Class>> list() {
-        logger.info("获取班级列表");
-        List<Class> list = classService.getList();
-        logger.info("班级列表获取成功，共{}条记录", list.size());
-        return Result.success(list);
+    public Result<Map<String, Object>> list(
+            @RequestParam(required = false) String className,
+            @RequestParam(required = false) String grade,
+            @RequestParam(required = false) String major,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        logger.info("获取班级列表，参数：className={}, grade={}, major={}, pageNum={}, pageSize={}", 
+            className, grade, major, pageNum, pageSize);
+        
+        List<Class> list = classService.getList(className, grade, major, pageNum, pageSize);
+        int total = classService.getCount(className, grade, major);
+        
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", total);
+        
+        logger.info("班级列表获取成功，共{}条记录", total);
+        return Result.success(data);
     }
 
     @GetMapping("/{id}")

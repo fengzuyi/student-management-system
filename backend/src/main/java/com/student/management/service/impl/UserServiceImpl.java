@@ -12,26 +12,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
-
-    @Override
-    public Result listUsers() {
-        List<User> users = userMapper.findAll();
-        List<UserDTO> userDTOs = users.stream()
-            .map(user -> {
-                UserDTO dto = new UserDTO();
-                BeanUtils.copyProperties(user, dto);
-                return dto;
-            })
-            .collect(Collectors.toList());
-        return Result.success(userDTOs);
-    }
 
     @Override
     @Transactional
@@ -109,5 +98,26 @@ public class UserServiceImpl implements UserService {
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(user, userDTO);
         return Result.success(userDTO);
+    }
+
+    @Override
+    public Result<Map<String, Object>> listUsers(String username, String realName, String role, Integer pageNum, Integer pageSize) {
+        int offset = (pageNum - 1) * pageSize;
+        List<User> users = userMapper.findList(username, realName, role, offset, pageSize);
+        int total = userMapper.findCount(username, realName, role);
+        
+        List<UserDTO> userDTOs = users.stream()
+            .map(user -> {
+                UserDTO dto = new UserDTO();
+                BeanUtils.copyProperties(user, dto);
+                return dto;
+            })
+            .collect(Collectors.toList());
+            
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", userDTOs);
+        data.put("total", total);
+        
+        return Result.success(data);
     }
 } 

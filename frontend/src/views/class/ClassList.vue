@@ -4,19 +4,36 @@
       <template #header>
         <div class="card-header">
           <span>班级管理</span>
-          <div>
-            <el-button type="danger" @click="handleBatchDelete" :disabled="!selectedClasses.length" style="margin-right: 10px">批量删除</el-button>
-            <el-button type="success" @click="handleExport" style="margin-right: 10px">导出Excel</el-button>
+          <div class="header-operations">
+            <el-button type="danger" @click="handleBatchDelete" :disabled="!selectedClasses.length">批量删除</el-button>
+            <el-button type="success" @click="handleExport">导出Excel</el-button>
             <el-button type="primary" @click="handleAdd">新增班级</el-button>
           </div>
         </div>
       </template>
+
+      <el-form :inline="true" :model="queryParams" class="demo-form-inline">
+        <el-form-item label="班级名称">
+          <el-input v-model="queryParams.className" placeholder="请输入班级名称" clearable />
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-input v-model="queryParams.grade" placeholder="请输入年级" clearable />
+        </el-form-item>
+        <el-form-item label="专业">
+          <el-input v-model="queryParams.major" placeholder="请输入专业" clearable />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleQuery">查询</el-button>
+          <el-button @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
 
       <el-table 
         :data="classList" 
         border 
         style="width: 100%"
         @selection-change="handleSelectionChange"
+        v-loading="loading"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="className" label="班级名称" width="150" />
@@ -34,6 +51,18 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="queryParams.pageNum"
+          v-model:page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- 新增/编辑对话框 -->
@@ -73,19 +102,21 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import request from '@/utils/request'
-import axios from 'axios'
+import { getClassList, createClass, updateClass, deleteClass, exportClass, type ClassInfo, type ClassQuery } from '@/api/class'
 
-interface ClassInfo {
-  id: number
-  className: string
-  grade: string
-  major: string
-  studentCount: number
-}
+// 查询参数
+const queryParams = reactive<ClassQuery>({
+  className: '',
+  grade: '',
+  major: '',
+  pageNum: 1,
+  pageSize: 10
+})
 
 // 数据列表
 const classList = ref<ClassInfo[]>([])
+const total = ref(0)
+const loading = ref(false)
 const selectedClasses = ref<ClassInfo[]>([])
 
 // 表单相关
@@ -114,12 +145,42 @@ const rules = reactive<FormRules>({
 
 // 获取班级列表
 const getList = async () => {
+  loading.value = true
   try {
-    const res = await request.get('/api/class/list')
-    classList.value = res.data
+    const res = await getClassList(queryParams)
+    classList.value = res.data.list
+    total.value = res.data.total
   } catch (error) {
     ElMessage.error('获取班级列表失败')
+  } finally {
+    loading.value = false
   }
+}
+
+// 查询按钮操作
+const handleQuery = () => {
+  queryParams.pageNum = 1
+  getList()
+}
+
+// 重置按钮操作
+const resetQuery = () => {
+  queryParams.className = ''
+  queryParams.grade = ''
+  queryParams.major = ''
+  handleQuery()
+}
+
+// 分页大小改变
+const handleSizeChange = (val: number) => {
+  queryParams.pageSize = val
+  getList()
+}
+
+// 页码改变
+const handleCurrentChange = (val: number) => {
+  queryParams.pageNum = val
+  getList()
 }
 
 // 新增班级
@@ -150,13 +211,7 @@ const handleEdit = (row: ClassInfo) => {
 const handleExport = async () => {
   try {
     ElMessage.info('正在导出Excel，请稍候...')
-    const response = await axios.get('/api/class/export', {
-      responseType: 'blob',
-      headers: {
-        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    const response = await exportClass()
     
     const blob = new Blob([response.data], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -188,7 +243,7 @@ const handleDelete = (row: ClassInfo) => {
     }
   ).then(async () => {
     try {
-      await request.delete(`/class/${row.id}`)
+      await deleteClass(row.id)
       ElMessage.success('删除成功')
       getList()
     } catch (error) {
@@ -204,10 +259,10 @@ const submitForm = async () => {
     if (valid) {
       try {
         if (form.id) {
-          await request.put('/class', form)
+          await updateClass(form)
           ElMessage.success('修改成功')
         } else {
-          await request.post('/class', form)
+          await createClass(form)
           ElMessage.success('新增成功')
         }
         dialogVisible.value = false
@@ -237,7 +292,7 @@ const handleBatchDelete = () => {
     return
   }
 
-  const classNames = selectedClasses.value.map(item => item.className).join('、')
+  const classNames = selectedClasses.value.map((item: ClassInfo) => item.className).join('、')
   ElMessageBox.confirm(
     `确认删除以下班级吗？\n${classNames}\n注意：删除班级将同时删除该班级下的所有学生信息！`,
     '警告',
@@ -248,8 +303,8 @@ const handleBatchDelete = () => {
     }
   ).then(async () => {
     try {
-      const ids = selectedClasses.value.map(item => item.id)
-      await request.delete('/class/batch', { data: ids })
+      const ids = selectedClasses.value.map((item: ClassInfo) => item.id!)
+      await deleteClass(ids)
       ElMessage.success('删除成功')
       getList()
     } catch (error) {
@@ -265,12 +320,62 @@ onMounted(() => {
 
 <style scoped>
 .class-list {
-  padding: 20px;
+  height: 100%;
+  background-color: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.el-card {
+  background-color: #fff;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.el-card :deep(.el-card__body) {
+  flex: 1;
+  padding: 10px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.header-operations {
+  display: flex;
+  gap: 10px;
+}
+
+.demo-form-inline {
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.pagination-container {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: flex-end;
+  background-color: #fff;
+  border-top: 1px solid #ebeef5;
+  margin-top: auto;
+}
+
+.el-table {
+  margin: 10px 0;
+  flex: 1;
+  overflow: auto;
 }
 </style> 

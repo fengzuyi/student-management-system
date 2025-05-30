@@ -11,12 +11,66 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <sql id="Base_Column_List">
+        id, class_name, grade, major, student_count, create_time, update_time
+    </sql>
+
     <select id="selectList" resultMap="BaseResultMap">
-        SELECT * FROM class ORDER BY id DESC
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM class
+        <where>
+            <if test="className != null and className != ''">
+                AND class_name LIKE CONCAT('%', #{className}, '%')
+            </if>
+            <if test="grade != null and grade != ''">
+                AND grade LIKE CONCAT('%', #{grade}, '%')
+            </if>
+            <if test="major != null and major != ''">
+                AND major LIKE CONCAT('%', #{major}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM class
+        <where>
+            <if test="className != null and className != ''">
+                AND class_name LIKE CONCAT('%', #{className}, '%')
+            </if>
+            <if test="grade != null and grade != ''">
+                AND grade LIKE CONCAT('%', #{grade}, '%')
+            </if>
+            <if test="major != null and major != ''">
+                AND major LIKE CONCAT('%', #{major}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectCountExcludeSelf" resultType="int">
+        SELECT COUNT(*)
+        FROM class
+        <where>
+            <if test="className != null and className != ''">
+                AND class_name LIKE CONCAT('%', #{className}, '%')
+            </if>
+            <if test="grade != null and grade != ''">
+                AND grade LIKE CONCAT('%', #{grade}, '%')
+            </if>
+            <if test="major != null and major != ''">
+                AND major LIKE CONCAT('%', #{major}, '%')
+            </if>
+            AND id != #{excludeId}
+        </where>
     </select>
 
     <select id="selectById" resultMap="BaseResultMap">
-        SELECT * FROM class WHERE id = #{id}
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM class WHERE id = #{id}
     </select>
 
     <insert id="insert" parameterType="com.student.management.entity.Class" useGeneratedKeys="true" keyProperty="id">

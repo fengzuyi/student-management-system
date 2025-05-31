@@ -239,29 +239,6 @@ interface FormState {
 
 const router = useRouter()
 
-const columns = [
-  {
-    prop: 'studentNo',
-    label: '学号'
-  },
-  {
-    prop: 'studentName',
-    label: '姓名'
-  },
-  {
-    prop: 'courseName',
-    label: '课程'
-  },
-  {
-    prop: 'semester',
-    label: '学期'
-  },
-  {
-    prop: 'score',
-    label: '成绩'
-  }
-]
-
 const searchForm = reactive<SearchForm>({
   semester: undefined,
   courseId: undefined,

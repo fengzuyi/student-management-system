@@ -42,15 +42,7 @@ public class AuthServiceImpl implements AuthService {
         // 生成token
         String token = jwtUtil.generateToken(user.getId());
 
-        // 检查是否有其他设备登录
-        if (user.getLastToken() != null) {
-            // 验证旧token是否有效
-            if (jwtUtil.validateToken(user.getLastToken())) {
-                return Result.error("该账号已在其他设备登录，请先退出其他设备的登录");
-            }
-        }
-
-        // 更新用户的last_token
+        // 更新用户的last_token，使旧设备登录失效
         userMapper.updateLastToken(user.getId(), token);
 
         // 返回用户信息（不包含密码）

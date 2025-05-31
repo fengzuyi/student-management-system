@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 import Layout from '../layout/index.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -105,16 +106,17 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory('/'),
   routes,
-  scrollBehavior: (to, from, savedPosition) => {
+  scrollBehavior: (_to, _from, savedPosition) => {
     if (savedPosition) {
       return savedPosition
+    } else {
+      return { top: 0 }
     }
-    return { top: 0, left: 0 }
   }
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   // 设置页面标题
   document.title = to.meta.title as string || '学生管理系统'
 

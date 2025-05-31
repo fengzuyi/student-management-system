@@ -160,23 +160,6 @@ interface ClassInfo {
   className: string
 }
 
-interface ApiResponse<T> {
-  code: number
-  message?: string
-  data: T
-}
-
-interface ClassListResponse {
-  list: ClassInfo[]
-  total: number
-}
-
-interface ImportResponse {
-  code: number
-  message?: string
-  data?: any
-}
-
 // 查询参数
 const queryParams = reactive({
   pageNum: 1,
@@ -391,7 +374,7 @@ const submitForm = async () => {
 }
 
 // 导入成功
-const handleImportSuccess = (response: ImportResponse) => {
+const handleImportSuccess = (response: any) => {
   if (response.code === 200) {
     ElMessage.success('导入成功')
     getList()

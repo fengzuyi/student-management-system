@@ -67,8 +67,7 @@ CREATE TABLE IF NOT EXISTS operation_log (
     user_id BIGINT NOT NULL,
     operation_type VARCHAR(50) NOT NULL,
     operation_content TEXT,
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES sys_user(id)
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 清理现有数据（注意删除顺序要符合外键约束）

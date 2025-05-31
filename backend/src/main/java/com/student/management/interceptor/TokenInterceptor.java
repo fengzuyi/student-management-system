@@ -2,18 +2,20 @@ package com.student.management.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.student.management.common.Result;
+import com.student.management.entity.User;
+import com.student.management.mapper.UserMapper;
 import com.student.management.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -26,6 +28,9 @@ public class TokenInterceptor extends OncePerRequestFilter {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -59,16 +64,28 @@ public class TokenInterceptor extends OncePerRequestFilter {
             try {
                 // 验证token
                 if (jwtUtil.validateToken(token)) {
-                    logger.debug("Token验证成功");
-                    // 设置认证信息
-                    Authentication authentication = jwtUtil.getAuthentication(token);
-                    if (authentication != null) {
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        logger.debug("已设置认证信息: {}", authentication);
-                        filterChain.doFilter(request, response);
-                        return;
+                    // 获取token中的用户ID
+                    Long userId = jwtUtil.getUserIdFromToken(token);
+                    // 检查token是否是用户最新的token
+                    User user = userMapper.findById(userId);
+                    if (user != null && token.equals(user.getLastToken())) {
+                        logger.debug("Token验证成功");
+                        // 设置认证信息
+                        Authentication authentication = jwtUtil.getAuthentication(token);
+                        if (authentication != null) {
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                            logger.debug("已设置认证信息: {}", authentication);
+                            filterChain.doFilter(request, response);
+                            return;
+                        } else {
+                            logger.error("获取认证信息失败");
+                        }
                     } else {
-                        logger.error("获取认证信息失败");
+                        logger.error("Token已失效（已被其他设备登录）");
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.getWriter().write(objectMapper.writeValueAsString(Result.error("您的账号已在其他设备登录，请重新登录")));
+                        return;
                     }
                 } else {
                     logger.error("Token验证失败");

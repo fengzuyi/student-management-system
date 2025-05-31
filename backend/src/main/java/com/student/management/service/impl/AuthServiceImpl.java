@@ -42,6 +42,17 @@ public class AuthServiceImpl implements AuthService {
         // 生成token
         String token = jwtUtil.generateToken(user.getId());
 
+        // 检查是否有其他设备登录
+        if (user.getLastToken() != null) {
+            // 验证旧token是否有效
+            if (jwtUtil.validateToken(user.getLastToken())) {
+                return Result.error("该账号已在其他设备登录，请先退出其他设备的登录");
+            }
+        }
+
+        // 更新用户的last_token
+        userMapper.updateLastToken(user.getId(), token);
+
         // 返回用户信息（不包含密码）
         user.setPassword(null);
         Map<String, Object> data = new HashMap<>();
@@ -68,7 +79,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Result logout() {
-        // 由于使用JWT，服务端不需要维护会话状态，直接返回成功即可
+        Long userId = SecurityUtil.getCurrentUserId();
+        if (userId != null) {
+            // 清除用户的last_token
+            userMapper.updateLastToken(userId, null);
+        }
         return Result.success(null);
     }
 

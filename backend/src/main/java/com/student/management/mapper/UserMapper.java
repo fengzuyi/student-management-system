@@ -33,4 +33,8 @@ public interface UserMapper {
 
     @Update("UPDATE sys_user SET password = #{password} WHERE id = #{id}")
     int updateById(@Param("id") Long id, @Param("password") String password);
+
+    int updateLastToken(@Param("id") Long id, @Param("token") String token);
+
+    User findByToken(String token);
 } 

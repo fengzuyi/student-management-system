@@ -8,12 +8,13 @@
         <result column="password" property="password"/>
         <result column="real_name" property="realName"/>
         <result column="role" property="role"/>
+        <result column="last_token" property="lastToken"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, username, password, real_name, role, create_time, update_time
+        id, username, password, real_name, role, last_token, create_time, update_time
     </sql>
 
     <select id="findList" resultMap="BaseResultMap">
@@ -88,4 +89,14 @@
     <delete id="deleteById">
         DELETE FROM sys_user WHERE id = #{id}
     </delete>
+
+    <update id="updateLastToken">
+        UPDATE sys_user SET last_token = #{token} WHERE id = #{id}
+    </update>
+
+    <select id="findByToken" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE last_token = #{token}
+    </select>
 </mapper> 

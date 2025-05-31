@@ -10,6 +10,7 @@ public class User {
     private String password;
     private String realName;
     private String role;
+    private String lastToken;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 } 

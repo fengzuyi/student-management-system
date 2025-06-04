@@ -5,9 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
-/**
- * 成绩管理服务接口
- */
 public interface GradeService {
     /**
      * 获取所有成绩
@@ -29,62 +26,41 @@ public interface GradeService {
 
     /**
      * 添加成绩
-     * @param gradeDTO 成绩信息
-     * @return 添加后的成绩信息
      */
     GradeDTO addGrade(GradeDTO gradeDTO);
 
     /**
      * 更新成绩
-     * @param id 成绩ID
-     * @param gradeDTO 成绩信息
-     * @return 更新后的成绩信息
      */
     GradeDTO updateGrade(Long id, GradeDTO gradeDTO);
 
     /**
      * 获取学生的所有成绩
-     * @param studentId 学生ID
-     * @return 成绩列表
      */
     List<GradeDTO> getGradesByStudent(Long studentId);
 
     /**
      * 获取课程的所有成绩
-     * @param courseId 课程ID
-     * @return 成绩列表
      */
     List<GradeDTO> getGradesByCourse(Long courseId);
 
     /**
      * 获取学生指定学期的成绩
-     * @param studentId 学生ID
-     * @param semester 学期
-     * @return 成绩列表
      */
     List<GradeDTO> getGradesByStudentAndSemester(Long studentId, String semester);
 
     /**
      * 获取课程指定学期的平均分
-     * @param courseId 课程ID
-     * @param semester 学期
-     * @return 平均分
      */
     Double getAverageScoreByCourseAndSemester(Long courseId, String semester);
 
     /**
      * 获取课程指定学期的最高分
-     * @param courseId 课程ID
-     * @param semester 学期
-     * @return 最高分
      */
     Double getMaxScoreByCourseAndSemester(Long courseId, String semester);
 
     /**
      * 获取课程指定学期的最低分
-     * @param courseId 课程ID
-     * @param semester 学期
-     * @return 最低分
      */
     Double getMinScoreByCourseAndSemester(Long courseId, String semester);
 
